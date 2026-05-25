@@ -1,0 +1,700 @@
+# EDFlow Analytics
+
+A healthcare data engineering and analytics platform for analyzing Emergency Department throughput across U.S. hospitals using public CMS hospital quality datasets.
+
+This is **not** an AI doctor, clinical chatbot, or medical recommendation tool. The goal is to build a real data platform that cleans, models, and visualizes healthcare operations data for analysts, data engineers, and hospital operations teams.
+
+---
+
+## Project Summary
+
+EDFlow Analytics answers:
+
+> Which hospitals and states show the worst Emergency Department throughput, what trends or outliers exist, and how can analysts monitor these metrics with clean, auditable data?
+
+The final product should demonstrate:
+
+- Data ingestion
+- Data cleaning
+- Database design
+- ETL/ELT pipelines
+- Healthcare analytics
+- Dashboarding
+- API development
+- Statistical analysis
+- Practical modeling for forecasting, classification, clustering, and outlier detection
+
+---
+
+## Target Users
+
+This app is designed for:
+
+- Healthcare data analysts
+- Hospital operations teams
+- Quality improvement teams
+- Public health researchers
+- Data engineering recruiters
+- Healthcare analytics recruiters
+
+This app is **not** designed for doctors during active patient care.
+
+---
+
+## Core Data Sources
+
+Use public healthcare datasets, especially the CMS Provider Data Catalog.
+
+### Primary Dataset
+
+- **CMS Timely and Effective Care - Hospital**  
+  https://data.cms.gov/provider-data/dataset/yv7e-xc69
+
+### Relevant CMS Measures
+
+- **OP-18b:** Median time from Emergency Department arrival to Emergency Department departure for discharged ED patients
+- **OP-18c:** Median time for psychiatric/mental health Emergency Department patients
+- **OP-22:** Left without being seen
+- **OP-23:** Head CT/MRI result timing for acute stroke or hemorrhage patients
+
+### Optional Supporting Datasets
+
+- CMS Hospital General Information
+- CMS Hospital Overall Star Ratings
+- CMS state-level Timely and Effective Care data
+- CDC or AHRQ datasets if useful later
+
+---
+
+## Tech Stack
+
+### Backend
+
+- Python
+- FastAPI
+- PostgreSQL
+- SQLAlchemy
+- Pydantic
+- pandas
+- pytest
+
+### Data Engineering
+
+- Python ETL scripts
+- dbt, preferred if useful
+- Great Expectations or custom data validation
+- Docker Compose
+
+### Frontend
+
+- React
+- TypeScript
+- Tailwind CSS
+- Recharts or Tremor
+- Axios or fetch for API calls
+
+### Analytics and Modeling
+
+- scikit-learn
+- statsmodels
+- XGBoost only if useful
+- No generative AI required
+
+---
+
+## Core Features
+
+### 1. Data Pipeline
+
+Build scripts that:
+
+1. Download or load CMS CSV data
+2. Store raw data in PostgreSQL
+3. Clean and transform hospital quality measures
+4. Normalize hospital IDs, states, measure names, measure values, dates, and scores
+5. Create analytics-ready tables
+6. Run data quality checks
+
+### Raw Tables
+
+- `raw_hospital_general_info`
+- `raw_timely_effective_care`
+- `raw_measure_metadata`
+
+### Clean Tables
+
+- `dim_hospital`
+- `dim_location`
+- `dim_measure`
+- `fact_ed_quality_measure`
+- `fact_state_ed_summary`
+
+---
+
+### 2. Backend API
+
+Build FastAPI endpoints:
+
+- `GET /health`
+- `GET /hospitals`
+- `GET /hospitals/{provider_id}`
+- `GET /measures`
+- `GET /ed/overview`
+- `GET /ed/state-summary`
+- `GET /ed/outliers`
+- `GET /ed/hospital-comparison`
+- `GET /data-quality`
+
+The API should return clean JSON for the frontend.
+
+---
+
+### 3. Dashboard
+
+Build a React dashboard with the following pages.
+
+#### National Overview
+
+Show:
+
+- Average ED throughput by state
+- Best and worst states
+- National median ED time
+- Distribution of ED performance
+- Number of reporting hospitals
+
+#### Hospital Explorer
+
+Allow users to search by:
+
+- Hospital name
+- State
+- Provider ID
+
+Show:
+
+- Hospital ED measures
+- State average
+- National average
+- Percentile ranking
+- Available measure history
+
+#### Outlier Finder
+
+Show:
+
+- Hospitals with unusually high ED wait/departure times
+- Hospitals with high left-without-being-seen rates
+- Hospitals missing key ED data
+- State-level outliers
+
+#### Data Quality Monitor
+
+Show:
+
+- Raw row counts
+- Cleaned row counts
+- Missing value percentages
+- Invalid numeric fields
+- Latest ingestion timestamp
+- Failed validation checks
+
+#### Analyst Report
+
+Show:
+
+- Key insights
+- Charts
+- Summary statistics
+- Correlations
+- Limitations of the data
+
+---
+
+## Analytics Requirements
+
+The project should include a Jupyter notebook or written report that answers:
+
+1. Which states have the highest median ED throughput times?
+2. Which hospitals are worst-performing outliers?
+3. How much variation exists within each state?
+4. Do hospital ratings or hospital types correlate with ED performance?
+5. Which measures have the most missing data?
+6. Are there clusters of hospitals with similar ED performance profiles?
+
+Use clear charts and written interpretation.
+
+---
+
+## Modeling Phase
+
+The modeling phase should be practical, explainable, and focused on healthcare operations analytics.
+
+The goal is **not** to predict individual patient outcomes or make clinical decisions. The goal is to model hospital-level Emergency Department performance using public CMS quality data.
+
+### Modeling Objective
+
+Build models that help answer:
+
+> Which hospitals are performing unusually poorly on ED throughput, which factors are associated with poor performance, and can we classify or forecast operational risk using clean hospital-level data?
+
+### Modeling Tasks
+
+Implement at least **3** of the following tasks.
+
+---
+
+### 1. Outlier Detection
+
+Identify hospitals with unusually high ED throughput times or unusually high left-without-being-seen rates.
+
+#### Methods
+
+- z-score outlier detection
+- IQR-based outlier detection
+- Isolation Forest, optional
+
+#### Outputs
+
+- Top outlier hospitals nationally
+- Top outlier hospitals by state
+- Outlier severity score
+- Explanation of why each hospital was flagged
+
+---
+
+### 2. Hospital Performance Clustering
+
+Cluster hospitals into similar ED performance groups.
+
+#### Possible Features
+
+- Median ED departure time
+- Left-without-being-seen percentage
+- Hospital rating
+- Hospital ownership type
+- Emergency services availability
+- State or region
+- Number of reported measures
+- Missingness rate
+
+#### Methods
+
+- K-Means
+- Hierarchical clustering
+- PCA for visualization, optional
+
+#### Outputs
+
+- Hospital cluster labels
+- Cluster summary table
+- Interpretation of each cluster
+
+#### Example Cluster Labels
+
+- High-performing hospitals
+- Average throughput hospitals
+- High-delay hospitals
+- High-missing-data hospitals
+- High-risk ED bottleneck hospitals
+
+---
+
+### 3. Regression Analysis
+
+Analyze which hospital-level features are associated with worse ED throughput.
+
+#### Target Variable Examples
+
+- OP-18b median ED arrival-to-departure time
+- OP-22 left-without-being-seen percentage
+
+#### Possible Predictors
+
+- Hospital ownership
+- Hospital type
+- Emergency services availability
+- State
+- Overall hospital rating
+- Other quality measures
+- Reporting completeness
+
+#### Methods
+
+- Linear regression
+- Ridge regression
+- Random forest regression, optional
+
+#### Outputs
+
+- Feature importance
+- Coefficient table
+- Model performance metrics
+- Explanation of limitations
+
+---
+
+### 4. Classification Model
+
+Classify whether a hospital is at high risk for poor ED throughput.
+
+#### Target
+
+- `high_ed_delay = 1` if hospital is in the top 25% nationally for ED departure time
+- `high_ed_delay = 0` otherwise
+
+#### Possible Models
+
+- Logistic regression
+- Random forest classifier
+- XGBoost classifier, optional
+
+#### Metrics
+
+- Accuracy
+- Precision
+- Recall
+- F1 score
+- ROC-AUC
+- Confusion matrix
+
+#### Outputs
+
+- Predicted risk category
+- Probability of high ED delay
+- Most important features
+
+---
+
+### 5. Time-Based Trend Modeling
+
+If multiple CMS reporting periods are available, model ED performance trends over time.
+
+#### Tasks
+
+- Compare current vs. previous reporting periods
+- Identify improving hospitals
+- Identify worsening hospitals
+- Forecast state-level ED throughput trends, optional
+
+#### Methods
+
+- Rolling averages
+- Trend slopes
+- Simple time-series forecasting
+- Prophet or ARIMA only if useful
+
+#### Outputs
+
+- Trend charts
+- Improving and worsening hospital lists
+- State-level performance movement
+
+---
+
+## Modeling Deliverables
+
+The modeling phase should produce:
+
+- `notebooks/modeling_ed_performance.ipynb`
+- `backend/app/services/modeling_service.py`
+- `pipelines/build_modeling_dataset.py`
+- `docs/modeling_methodology.md`
+- `docs/modeling_results.md`
+
+The notebook should include:
+
+- Feature engineering
+- Train/test split
+- Baseline model
+- Final model
+- Metrics
+- Charts
+- Interpretation
+- Limitations
+
+The backend should expose modeling results through API endpoints.
+
+---
+
+## Modeling API Endpoints
+
+Add these FastAPI endpoints:
+
+- `GET /models/outliers`
+- `GET /models/clusters`
+- `GET /models/high-risk-hospitals`
+- `GET /models/feature-importance`
+- `GET /models/model-summary`
+
+Each endpoint should return clean JSON that can be used by the frontend dashboard.
+
+---
+
+## Modeling Dashboard Page
+
+Add a dashboard section called **ED Risk Modeling**.
+
+This page should show:
+
+- High-risk hospital table
+- Outlier hospitals
+- Cluster breakdown
+- Feature importance chart
+- Model performance metrics
+- Confusion matrix, if classification is used
+- Clear explanation of what the model does and does not mean
+
+Include this warning in the UI:
+
+> This model is for healthcare operations analysis only. It does not make clinical decisions or patient-level predictions.
+
+---
+
+## Modeling Rules
+
+The modeling layer must follow these rules:
+
+- Use hospital-level or state-level data only
+- Avoid patient-level clinical prediction
+- Avoid diagnosis or treatment recommendations
+- Prioritize explainable models
+- Include model limitations
+- Include data quality warnings
+- Compare every model to a simple baseline
+- Do not overclaim accuracy or usefulness
+
+The modeling should support analysts, not replace healthcare professionals.
+
+---
+
+## Project Structure
+
+```text
+edflow-analytics/
+  README.md
+  docker-compose.yml
+  .env.example
+  .gitignore
+
+  backend/
+    app/
+      main.py
+      api/
+        routes_hospitals.py
+        routes_ed.py
+        routes_quality.py
+        routes_models.py
+      db/
+        database.py
+        models.py
+      schemas/
+        hospital.py
+        measure.py
+        ed.py
+        modeling.py
+      services/
+        hospital_service.py
+        ed_service.py
+        modeling_service.py
+      tests/
+        test_api.py
+        test_models.py
+
+  frontend/
+    package.json
+    src/
+      App.tsx
+      main.tsx
+      components/
+        MetricCard.tsx
+        ChartCard.tsx
+        HospitalSearch.tsx
+      pages/
+        Overview.tsx
+        HospitalExplorer.tsx
+        Outliers.tsx
+        DataQuality.tsx
+        AnalystReport.tsx
+        EDRiskModeling.tsx
+      api/
+        client.ts
+
+  pipelines/
+    ingest_cms.py
+    transform_cms.py
+    validate_data.py
+    load_to_postgres.py
+    build_modeling_dataset.py
+
+  dbt/
+    models/
+      staging/
+      marts/
+
+  notebooks/
+    ed_throughput_analysis.ipynb
+    modeling_ed_performance.ipynb
+
+  docs/
+    architecture.md
+    data_dictionary.md
+    methodology.md
+    findings.md
+    modeling_methodology.md
+    modeling_results.md
+```
+
+---
+
+## Development Phases
+
+### Phase 1: Setup
+
+- Create repo structure
+- Add Docker Compose with PostgreSQL
+- Add FastAPI backend
+- Add React frontend
+- Add README and docs folder
+
+### Phase 2: Data Ingestion
+
+- Load CMS Timely and Effective Care data
+- Load hospital general information
+- Save raw data to PostgreSQL
+- Preserve raw tables exactly
+
+### Phase 3: Data Cleaning
+
+- Filter ED-related measures
+- Parse numeric measure values
+- Normalize hospital IDs and state codes
+- Create clean dimensional schema
+- Add data quality checks
+
+### Phase 4: Backend API
+
+- Build endpoints for hospitals, measures, ED summaries, and data quality
+- Add pagination/filtering where useful
+- Add API documentation via FastAPI docs
+
+### Phase 5: Dashboard
+
+- Build national overview
+- Build hospital search/explorer
+- Build outlier dashboard
+- Build data quality monitor
+- Build analyst report page
+
+### Phase 6: Analytics
+
+- Create notebook with real findings
+- Add charts
+- Add summary statistics
+- Add written methodology
+- Add limitations section
+
+### Phase 7: Modeling
+
+- Build modeling dataset from cleaned CMS tables
+- Engineer hospital-level features
+- Implement outlier detection
+- Implement clustering
+- Implement regression or classification model
+- Evaluate models with clear metrics
+- Save model results to database
+- Expose model outputs through API
+- Display model outputs in dashboard
+
+### Phase 8: Polish
+
+- Add tests
+- Add screenshots
+- Add deployment instructions
+- Add final resume bullets
+- Add demo script
+- Clean UI
+
+---
+
+## Acceptance Criteria
+
+The project is complete when:
+
+- CMS data can be ingested reproducibly
+- Raw and cleaned tables exist in PostgreSQL
+- FastAPI backend serves real analytics endpoints
+- React frontend displays real hospital ED metrics
+- Dashboard supports hospital/state comparison
+- Outlier analysis works
+- Data quality page shows pipeline health
+- Modeling outputs are generated and exposed through the API
+- ED Risk Modeling dashboard displays model results
+- Notebook/report contains meaningful findings
+- README explains setup, methodology, and results
+- Project can be run locally with Docker Compose
+
+---
+
+## Design Philosophy
+
+This project should feel like a real healthcare analytics and data engineering project.
+
+### Prioritize
+
+- Real public data
+- Clean schema design
+- Reproducible pipelines
+- Explainable metrics
+- Operational insights
+- Recruiter-readable documentation
+
+### Avoid
+
+- Fake AI
+- Clinical decision-making
+- Unsupported claims
+- Unnecessary complexity
+- Generic dashboard filler
+- Diagnosis prediction
+- Treatment recommendations
+- Doctor chatbot features
+
+---
+
+## Resume Bullet Target
+
+Built EDFlow Analytics, a healthcare data engineering platform that ingests CMS hospital quality datasets into PostgreSQL, transforms Emergency Department throughput measures using Python/dbt, and visualizes hospital wait-time, left-without-being-seen, state-level performance trends, and operational risk modeling through a React/FastAPI dashboard.
+
+---
+
+## Codex Build Instruction
+
+Implement this project step by step.
+
+Start by creating:
+
+1. Repo structure
+2. Docker Compose PostgreSQL setup
+3. FastAPI backend skeleton
+4. React frontend skeleton
+5. Initial CMS ingestion pipeline
+
+After the data pipeline and dashboard are working, add the modeling phase. The modeling phase should include:
+
+- Outlier detection
+- Hospital clustering
+- Regression or classification modeling
+- Model evaluation
+- API endpoints for model outputs
+- Dashboard visualizations
+
+Do **not** add:
+
+- Generative AI
+- Clinical decision-support
+- Diagnosis prediction
+- Treatment recommendation features
+- Doctor chatbot functionality
+
+Focus on data engineering, analytics, healthcare operations modeling, clean APIs, and dashboard functionality.
