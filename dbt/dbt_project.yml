@@ -1,0 +1,14 @@
+name: "edflow_analytics"
+version: "0.1.0"
+config-version: 2
+
+profile: "edflow_analytics"
+
+model-paths: ["models"]
+
+models:
+  edflow_analytics:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

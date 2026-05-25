@@ -698,3 +698,57 @@ Do **not** add:
 - Doctor chatbot functionality
 
 Focus on data engineering, analytics, healthcare operations modeling, clean APIs, and dashboard functionality.
+
+---
+
+## Current Implementation Quickstart
+
+This repository now contains the first runnable EDFlow Analytics slice:
+
+- FastAPI backend with hospital, ED analytics, data quality, and modeling endpoints
+- React/TypeScript dashboard with Overview, Hospital Explorer, Outliers, Data Quality, Analyst Report, and ED Risk Modeling pages
+- Docker Compose PostgreSQL setup
+- CMS Provider Data Catalog ingestion, transformation, validation, loading, and modeling pipeline scripts
+- Local seed data so the app runs before a live CMS ingest
+
+### Run With Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Then open:
+
+- API: http://localhost:8000/docs
+- Dashboard: http://localhost:5173
+
+### Run Locally
+
+Backend:
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Run The CMS Pipeline
+
+```bash
+python pipelines/ingest_cms.py --ed-only --max-rows 0
+python pipelines/transform_cms.py
+python pipelines/validate_data.py
+python pipelines/build_modeling_dataset.py
+```
+
+Use `--max-rows 15000` during development for a smaller CMS pull.
