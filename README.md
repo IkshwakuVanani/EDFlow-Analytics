@@ -1,19 +1,53 @@
-# EDFlow Analytics
+# EDFlow Orchestrator
 
-A healthcare data engineering and analytics platform for analyzing Emergency Department throughput across U.S. hospitals using public CMS hospital quality datasets.
+A hospital capacity orchestration prototype for reducing Emergency Department boarding by converting predicted demand into accountable bed-conversion actions.
 
-This is **not** an AI doctor, clinical chatbot, or medical recommendation tool. The goal is to build a real data platform that cleans, models, and visualizes healthcare operations data for analysts, data engineers, and hospital operations teams.
+This is **not** an AI doctor, clinical chatbot, or medical recommendation tool. The goal is to build a real operations platform that models hospital-wide capacity friction, recommends accountable tasks, and keeps public CMS analytics available as supporting evidence.
+
+---
+
+## Product Thesis
+
+Most hospitals already have dashboards, bed boards, EHR workflows, and some command-center tooling.
+What they still struggle with is turning prediction into action.
+
+This project is not another passive ED dashboard.
+It is a hospital capacity orchestration system.
+
+The goal is to reduce ED boarding and hospital-wide access block by converting predicted demand into accountable operational actions across:
+
+- discharge planning
+- bed management
+- environmental services
+- patient transport
+- case management
+- staffing and placement pathways
+
+We are not trying to make hospitals more aware of crowding.
+We are trying to make them faster at creating real capacity.
 
 ---
 
 ## Project Summary
 
-EDFlow Analytics answers:
+EDFlow Orchestrator answers:
+
+> Which exact action creates the most usable med-surg capacity in the next 30, 60, or 120 minutes, who owns it, what dependency blocks it, and when should the system escalate?
+
+The first product wedge is:
+
+> ED boarder -> inpatient med-surg bed placement
+
+The existing CMS analytics layer answers a supporting evidence question:
 
 > Which hospitals and states show the worst Emergency Department throughput, what trends or outliers exist, and how can analysts monitor these metrics with clean, auditable data?
 
 The final product should demonstrate:
 
+- Synthetic hospital operations event modeling
+- Capacity graph and blocker ranking
+- Action ownership, SLA tracking, and escalation
+- What-if simulation for bed-conversion levers
 - Data ingestion
 - Data cleaning
 - Database design
@@ -104,6 +138,30 @@ Use public healthcare datasets, especially the CMS Provider Data Catalog.
 
 ## Core Features
 
+### 0. Capacity Orchestration MVP
+
+Build a simulated med-surg capacity command center that tracks:
+
+1. Admitted ED boarders awaiting inpatient placement
+2. Pending discharges that can create usable beds
+3. EVS room turnover state
+4. Transport queue pressure
+5. Staffing confirmation and placement mismatch blockers
+6. Recommended actions with owner, deadline, dependency, expected capacity impact, and escalation state
+
+The main screens are:
+
+- **Command Center:** six-hour boarding pressure timeline, capacity flow graph, ranked blockers, and action details
+- **Capacity Graph:** boarder-to-ready-bed dependency map
+- **Blocker Queue:** operational blockers ranked by estimated bed-hour impact
+- **Action Console:** next-best actions with owner, SLA, dependency, escalation, and state updates
+- **Simulation:** what-if scenarios for staffed beds, EVS prioritization, transport, accelerated discharges, and observation overflow
+- **Evidence:** CMS public-data analytics that support the product thesis
+
+The prototype uses synthetic operations data only. It does not include real EHR, ADT, FHIR, or patient-level data.
+
+---
+
 ### 1. Data Pipeline
 
 Build scripts that:
@@ -136,6 +194,11 @@ Build scripts that:
 Build FastAPI endpoints:
 
 - `GET /health`
+- `GET /capacity/command-center`
+- `GET /capacity/blockers`
+- `GET /capacity/actions`
+- `PATCH /capacity/actions/{action_id}`
+- `POST /capacity/simulate`
 - `GET /hospitals`
 - `GET /hospitals/{provider_id}`
 - `GET /measures`
@@ -145,13 +208,24 @@ Build FastAPI endpoints:
 - `GET /ed/hospital-comparison`
 - `GET /data-quality`
 
-The API should return clean JSON for the frontend.
+The API should return clean JSON for the frontend. Capacity endpoints use synthetic operational data; CMS endpoints use seed data or CMS-derived tables.
 
 ---
 
-### 3. Dashboard
+### 3. Dashboard And Evidence Layer
 
-Build a React dashboard with the following pages.
+Build the main React app around EDFlow Orchestrator:
+
+- Command Center
+- Capacity Graph
+- Blocker Queue
+- Action Console
+- Simulation
+- Evidence
+
+The Evidence area preserves the CMS analytics pages:
+
+Build a React dashboard with the following evidence pages.
 
 #### National Overview
 
@@ -481,6 +555,7 @@ edflow-analytics/
     app/
       main.py
       api/
+        routes_capacity.py
         routes_hospitals.py
         routes_ed.py
         routes_quality.py
@@ -493,7 +568,9 @@ edflow-analytics/
         measure.py
         ed.py
         modeling.py
+        capacity.py
       services/
+        capacity_service.py
         hospital_service.py
         ed_service.py
         modeling_service.py
@@ -510,7 +587,14 @@ edflow-analytics/
         MetricCard.tsx
         ChartCard.tsx
         HospitalSearch.tsx
+        capacity/
       pages/
+        CommandCenter.tsx
+        CapacityGraph.tsx
+        BlockerQueue.tsx
+        ActionConsole.tsx
+        Simulation.tsx
+        Evidence.tsx
         Overview.tsx
         HospitalExplorer.tsx
         Outliers.tsx
@@ -621,15 +705,19 @@ edflow-analytics/
 
 The project is complete when:
 
+- Synthetic med-surg capacity command center runs locally
+- Capacity timeline, flow graph, blocker queue, action console, and simulation are visible in the frontend
+- Capacity API exposes command-center, blocker, action, action-update, and simulation contracts
+- Action state updates are reflected in the UI
 - CMS data can be ingested reproducibly
 - Raw and cleaned tables exist in PostgreSQL
 - FastAPI backend serves real analytics endpoints
-- React frontend displays real hospital ED metrics
-- Dashboard supports hospital/state comparison
+- Evidence tab displays real hospital ED metrics
+- Evidence tab supports hospital/state comparison
 - Outlier analysis works
 - Data quality page shows pipeline health
 - Modeling outputs are generated and exposed through the API
-- ED Risk Modeling dashboard displays model results
+- Evidence modeling tab displays model results
 - Notebook/report contains meaningful findings
 - README explains setup, methodology, and results
 - Project can be run locally with Docker Compose
@@ -638,10 +726,13 @@ The project is complete when:
 
 ## Design Philosophy
 
-This project should feel like a real healthcare analytics and data engineering project.
+This project should feel like a real healthcare operations product with a credible data engineering evidence layer.
 
 ### Prioritize
 
+- Closed-loop operational action
+- Bed-conversion workflows
+- Clear owners, SLAs, dependencies, and escalation
 - Real public data
 - Clean schema design
 - Reproducible pipelines
@@ -664,7 +755,7 @@ This project should feel like a real healthcare analytics and data engineering p
 
 ## Resume Bullet Target
 
-Built EDFlow Analytics, a healthcare data engineering platform that ingests CMS hospital quality datasets into PostgreSQL, transforms Emergency Department throughput measures using Python/dbt, and visualizes hospital wait-time, left-without-being-seen, state-level performance trends, and operational risk modeling through a React/FastAPI dashboard.
+Built EDFlow Orchestrator, a React/FastAPI hospital capacity operations prototype that models med-surg bed conversion for ED boarders, ranks throughput blockers by estimated bed-hour impact, simulates capacity levers, and preserves CMS hospital-quality analytics as a public-data evidence layer.
 
 ---
 
@@ -697,19 +788,41 @@ Do **not** add:
 - Treatment recommendation features
 - Doctor chatbot functionality
 
-Focus on data engineering, analytics, healthcare operations modeling, clean APIs, and dashboard functionality.
+Focus on capacity orchestration, healthcare operations modeling, clean APIs, synthetic workflow simulation, data engineering, and evidence dashboards.
 
 ---
 
 ## Current Implementation Quickstart
 
-This repository now contains the first runnable EDFlow Analytics slice:
+This repository now contains the first runnable EDFlow Orchestrator slice:
 
-- FastAPI backend with hospital, ED analytics, data quality, and modeling endpoints
-- React/TypeScript dashboard with Overview, Hospital Explorer, Outliers, Data Quality, Analyst Report, and ED Risk Modeling pages
+- FastAPI backend with capacity orchestration, hospital, ED analytics, data quality, and modeling endpoints
+- React/TypeScript product with Command Center, Capacity Graph, Blocker Queue, Action Console, Simulation, and Evidence pages
 - Docker Compose PostgreSQL setup
 - CMS Provider Data Catalog ingestion, transformation, validation, loading, and modeling pipeline scripts
-- Local seed data so the app runs before a live CMS ingest
+- Synthetic operations data and local CMS seed data so the app runs before any live CMS ingest
+
+### Rollout Assets
+
+- Deployment guide: `docs/deployment.md`
+- Demo script: `docs/demo_script.md`
+- Test plan: `docs/test_plan.md`
+- Resume bullets: `docs/resume_bullets.md`
+- Screenshots: `docs/assets/screenshots/`
+
+### Screenshots
+
+Command Center:
+
+![Command Center](docs/assets/screenshots/command-center-desktop.png)
+
+Simulation:
+
+![Simulation](docs/assets/screenshots/simulation-desktop.png)
+
+Evidence:
+
+![Evidence](docs/assets/screenshots/evidence-desktop.png)
 
 ### Run With Docker Compose
 
@@ -752,3 +865,13 @@ python pipelines/build_modeling_dataset.py
 ```
 
 Use `--max-rows 15000` during development for a smaller CMS pull.
+
+### Capacity API Smoke Checks
+
+```bash
+curl http://localhost:8000/capacity/command-center
+curl http://localhost:8000/capacity/blockers
+curl -X POST http://localhost:8000/capacity/simulate \
+  -H "Content-Type: application/json" \
+  -d '{"extra_staffed_beds":2,"evs_rooms_prioritized":4,"transporters_added":1,"accelerated_discharges":3,"observation_overflow":0}'
+```
