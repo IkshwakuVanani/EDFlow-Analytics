@@ -759,6 +759,51 @@ Built EDFlow Orchestrator, a React/FastAPI hospital capacity operations prototyp
 
 ---
 
+## Real-World Rollout Roadmap
+
+The app is currently ready as a deployable prototype. The next phase is making it reliable as a public web app, then useful as an operations product.
+
+### Phase 9: Public Deployment
+
+- Deploy the FastAPI backend to Render using `render.yaml`
+- Deploy the Vite frontend to Vercel with `frontend/` as the root directory
+- Set `VITE_API_BASE_URL` in Vercel to the Render backend URL
+- Set `CORS_ORIGINS` in Render to the Vercel frontend URL plus localhost development URLs
+- Verify `/health`, `/capacity/command-center`, `/capacity/actions`, `/capacity/simulate`, and the Evidence pages from the public frontend
+- Keep GitHub Actions green before promoting changes
+
+### Phase 10: Production Hardening
+
+- Add authentication before exposing any non-demo operational action workflow
+- Add database migrations instead of relying only on automatic table creation
+- Move action state from in-memory synthetic data into persistent database tables
+- Add structured logs, error monitoring, uptime checks, and basic usage analytics
+- Add frontend code splitting to reduce the current dashboard bundle size
+- Add rate limiting and stricter CORS for any public demo URL
+- Add a visible data-mode banner when the app is running on synthetic data
+
+### Phase 11: Real Operations Functionality
+
+- Replace synthetic capacity events with a normalized operations event model
+- Add connectors or import jobs for ADT-like events, bed status, EVS turnover, transport queues, staffing state, and discharge barriers
+- Keep patient-identifying information out of the prototype unless a proper compliance, security, and data-governance plan exists
+- Store action assignments, notes, escalations, and completion history
+- Add role-based views for bed management, EVS, transport, pharmacy, nursing admin, and case management
+- Validate recommendations with operations users before calling the product real workflow automation
+
+### Phase 12: Hospital-Grade Readiness
+
+- Complete HIPAA/security review before handling real patient or hospital operations data
+- Add audit logs for every action update and escalation
+- Add backup/restore, incident response, and data-retention policies
+- Add test data generation, staging, and production environments
+- Document integration contracts for FHIR-friendly workflow resources, HL7/ADT feeds, or CSV imports
+- Run pilot validation against historical, de-identified operations data
+
+The immediate deploy target is still a public synthetic-data demo. Real-world highest functionality requires persistent workflow state, authenticated users, monitored infrastructure, and validated hospital operations integrations.
+
+---
+
 ## Codex Build Instruction
 
 Implement this project step by step.

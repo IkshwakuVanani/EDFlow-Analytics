@@ -1,6 +1,16 @@
 from fastapi.testclient import TestClient
 
+from app.db.database import normalize_database_url
 from app.main import app
+
+
+def test_database_url_normalization_for_managed_postgres() -> None:
+    assert normalize_database_url("postgres://user:pass@host:5432/db") == "postgresql+psycopg://user:pass@host:5432/db"
+    assert (
+        normalize_database_url("postgresql://user:pass@host:5432/db")
+        == "postgresql+psycopg://user:pass@host:5432/db"
+    )
+    assert normalize_database_url("sqlite:///./edflow.db") == "sqlite:///./edflow.db"
 
 
 def test_health() -> None:

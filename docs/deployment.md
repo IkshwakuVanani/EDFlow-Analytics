@@ -5,6 +5,8 @@ This project has two deployable surfaces:
 - FastAPI backend: capacity orchestration APIs plus CMS evidence APIs
 - Vite frontend: EDFlow Orchestrator command-center UI
 
+The repository includes GitHub Actions in `.github/workflows/ci.yml`. Keep the backend test job and frontend build job passing before deploying or promoting changes.
+
 The simplest public rollout is:
 
 1. Deploy the backend to Render from this GitHub repo.
@@ -33,6 +35,8 @@ The backend uses synthetic operations seed data by default:
 EDFLOW_SEED_SAMPLE=true
 ```
 
+The app normalizes managed PostgreSQL connection strings to the installed `psycopg` SQLAlchemy driver, so Render-style `postgres://` and `postgresql://` URLs are supported.
+
 ## Frontend On Vercel
 
 Deploy only the `frontend/` directory.
@@ -51,6 +55,8 @@ Environment variable:
 ```bash
 VITE_API_BASE_URL=https://your-render-backend-url.onrender.com
 ```
+
+For a production deployment, use Vercel's Git integration so every push runs the Vercel build. Keep preview deployments for branches and promote only after CI passes.
 
 ## Frontend On Netlify
 
@@ -83,6 +89,18 @@ Then open the frontend and click:
 2. Mark Done
 3. Simulation
 4. Evidence
+
+## Real-World Functionality Checklist
+
+The current public deployment target is a synthetic-data demo. Before using this as a real hospital operations product, add:
+
+- Authentication and role-based access for operations users.
+- Persistent capacity action tables for assignment, notes, escalation, and completion history.
+- Database migrations for schema changes.
+- Observability: structured logs, error monitoring, uptime checks, and deployment alerts.
+- Rate limiting, strict CORS, and a security review before any non-demo exposure.
+- A real event ingestion path for ADT-like events, bed status, EVS state, transport queues, staffing, and discharge barriers.
+- Compliance planning before storing any PHI or real patient-level operational data.
 
 ## Notes
 

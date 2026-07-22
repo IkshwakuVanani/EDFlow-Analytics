@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   ActivitySquare,
+  AlertTriangle,
   BedDouble,
   Bell,
   ChevronDown,
@@ -166,6 +167,12 @@ function App() {
           </header>
 
           <div className="px-4 py-4 md:px-6">
+            <div className="mb-4 flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              <AlertTriangle className="mt-0.5 shrink-0 text-amber-700" size={17} />
+              <p>
+                Synthetic demo mode. EDFlow Orchestrator uses generated operations data here, contains no PHI, and is not clinical decision support.
+              </p>
+            </div>
             {active.id === "command" ? <CommandCenter onOpenSimulation={() => setPage("simulation")} /> : null}
             {active.id === "graph" ? <CapacityGraphPage /> : null}
             {active.id === "blockers" ? <BlockerQueue /> : null}
