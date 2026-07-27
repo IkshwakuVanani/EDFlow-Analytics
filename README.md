@@ -59,6 +59,21 @@ The final product should demonstrate:
 - Practical modeling for forecasting, classification, clustering, and outlier detection
 
 ---
+### Screenshots
+
+Command Center:
+
+![Command Center](docs/assets/screenshots/command-center-desktop.png)
+
+Simulation:
+
+![Simulation](docs/assets/screenshots/simulation-desktop.png)
+
+Evidence:
+
+![Evidence](docs/assets/screenshots/evidence-desktop.png)
+
+---
 
 ## Target Users
 
@@ -628,6 +643,69 @@ edflow-analytics/
     modeling_methodology.md
     modeling_results.md
 ```
+---
+
+## Acceptance Criteria
+
+The project is complete when:
+
+- Synthetic med-surg capacity command center runs locally
+- Capacity timeline, flow graph, blocker queue, action console, and simulation are visible in the frontend
+- Capacity API exposes command-center, blocker, action, action-update, and simulation contracts
+- Action state updates are reflected in the UI
+- CMS data can be ingested reproducibly
+- Raw and cleaned tables exist in PostgreSQL
+- FastAPI backend serves real analytics endpoints
+- Evidence tab displays real hospital ED metrics
+- Evidence tab supports hospital/state comparison
+- Outlier analysis works
+- Data quality page shows pipeline health
+- Modeling outputs are generated and exposed through the API
+- Evidence modeling tab displays model results
+- Notebook/report contains meaningful findings
+- README explains setup, methodology, and results
+- Project can be run locally with Docker Compose
+
+---
+
+## Design Philosophy
+
+This project should feel like a real healthcare operations product with a credible data engineering evidence layer.
+
+### Prioritize
+
+- Closed-loop operational action
+- Bed-conversion workflows
+- Clear owners, SLAs, dependencies, and escalation
+- Real public data
+- Clean schema design
+- Reproducible pipelines
+- Explainable metrics
+- Operational insights
+- Recruiter-readable documentation
+
+### Avoid
+
+- Fake AI
+- Clinical decision-making
+- Unsupported claims
+- Unnecessary complexity
+- Generic dashboard filler
+- Diagnosis prediction
+- Treatment recommendations
+- Doctor chatbot features
+
+---
+
+## Resume Bullet Target
+
+Built EDFlow Orchestrator, a React/FastAPI hospital capacity operations prototype that models med-surg bed conversion for ED boarders, ranks throughput blockers by estimated bed-hour impact, simulates capacity levers, and preserves CMS hospital-quality analytics as a public-data evidence layer.
+
+---
+
+## Real-World Rollout Roadmap
+
+The app is currently ready as a deployable prototype. The next phase is making it reliable as a public web app, then useful as an operations product.
 
 ---
 
@@ -699,70 +777,6 @@ edflow-analytics/
 - Add demo script
 - Clean UI
 
----
-
-## Acceptance Criteria
-
-The project is complete when:
-
-- Synthetic med-surg capacity command center runs locally
-- Capacity timeline, flow graph, blocker queue, action console, and simulation are visible in the frontend
-- Capacity API exposes command-center, blocker, action, action-update, and simulation contracts
-- Action state updates are reflected in the UI
-- CMS data can be ingested reproducibly
-- Raw and cleaned tables exist in PostgreSQL
-- FastAPI backend serves real analytics endpoints
-- Evidence tab displays real hospital ED metrics
-- Evidence tab supports hospital/state comparison
-- Outlier analysis works
-- Data quality page shows pipeline health
-- Modeling outputs are generated and exposed through the API
-- Evidence modeling tab displays model results
-- Notebook/report contains meaningful findings
-- README explains setup, methodology, and results
-- Project can be run locally with Docker Compose
-
----
-
-## Design Philosophy
-
-This project should feel like a real healthcare operations product with a credible data engineering evidence layer.
-
-### Prioritize
-
-- Closed-loop operational action
-- Bed-conversion workflows
-- Clear owners, SLAs, dependencies, and escalation
-- Real public data
-- Clean schema design
-- Reproducible pipelines
-- Explainable metrics
-- Operational insights
-- Recruiter-readable documentation
-
-### Avoid
-
-- Fake AI
-- Clinical decision-making
-- Unsupported claims
-- Unnecessary complexity
-- Generic dashboard filler
-- Diagnosis prediction
-- Treatment recommendations
-- Doctor chatbot features
-
----
-
-## Resume Bullet Target
-
-Built EDFlow Orchestrator, a React/FastAPI hospital capacity operations prototype that models med-surg bed conversion for ED boarders, ranks throughput blockers by estimated bed-hour impact, simulates capacity levers, and preserves CMS hospital-quality analytics as a public-data evidence layer.
-
----
-
-## Real-World Rollout Roadmap
-
-The app is currently ready as a deployable prototype. The next phase is making it reliable as a public web app, then useful as an operations product.
-
 ### Phase 9: Public Deployment
 
 - Deploy the FastAPI backend to Render using `render.yaml`
@@ -804,39 +818,6 @@ The immediate deploy target is still a public synthetic-data demo. Real-world hi
 
 ---
 
-## Codex Build Instruction
-
-Implement this project step by step.
-
-Start by creating:
-
-1. Repo structure
-2. Docker Compose PostgreSQL setup
-3. FastAPI backend skeleton
-4. React frontend skeleton
-5. Initial CMS ingestion pipeline
-
-After the data pipeline and dashboard are working, add the modeling phase. The modeling phase should include:
-
-- Outlier detection
-- Hospital clustering
-- Regression or classification modeling
-- Model evaluation
-- API endpoints for model outputs
-- Dashboard visualizations
-
-Do **not** add:
-
-- Generative AI
-- Clinical decision-support
-- Diagnosis prediction
-- Treatment recommendation features
-- Doctor chatbot functionality
-
-Focus on capacity orchestration, healthcare operations modeling, clean APIs, synthetic workflow simulation, data engineering, and evidence dashboards.
-
----
-
 ## Current Implementation Quickstart
 
 This repository now contains the first runnable EDFlow Orchestrator slice:
@@ -854,20 +835,6 @@ This repository now contains the first runnable EDFlow Orchestrator slice:
 - Test plan: `docs/test_plan.md`
 - Resume bullets: `docs/resume_bullets.md`
 - Screenshots: `docs/assets/screenshots/`
-
-### Screenshots
-
-Command Center:
-
-![Command Center](docs/assets/screenshots/command-center-desktop.png)
-
-Simulation:
-
-![Simulation](docs/assets/screenshots/simulation-desktop.png)
-
-Evidence:
-
-![Evidence](docs/assets/screenshots/evidence-desktop.png)
 
 ### Run With Docker Compose
 
