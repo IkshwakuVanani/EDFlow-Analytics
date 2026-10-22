@@ -127,3 +127,9 @@ def test_hosted_api_requires_persistent_database(monkeypatch):
     with pytest.raises(RuntimeError, match='persistent PostgreSQL'):
         with TestClient(create_app()):
             pass
+
+
+def test_pooler_connection_url_removes_integration_metadata():
+    from app.db.database import normalize_database_url
+    url = normalize_database_url('postgres://user:pass@aws-0-region.pooler.supabase.com:6543/db?supa=metadata&pgbouncer=true&connection_limit=1&sslmode=require')
+    assert url == 'postgresql+psycopg://user:pass@aws-0-region.pooler.supabase.com:6543/db?sslmode=require'
