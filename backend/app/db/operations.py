@@ -1,6 +1,23 @@
 """Persistent, account-scoped hospital operations; no patient-level records."""
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, func
-from app.db.database import Base
+from sqlalchemy import MetaData, text
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.schema import CreateSchema
+from app.db.database import engine
+
+# Keep account credentials and operational data outside exposed public API schemas.
+Base = declarative_base(metadata=MetaData(schema="edflow" if engine.dialect.name == "postgresql" else None))
+
+def init_operations_db():
+    with engine.begin() as connection:
+        if engine.dialect.name == "postgresql":
+            connection.execute(CreateSchema("edflow", if_not_exists=True))
+            connection.execute(text("REVOKE ALL ON SCHEMA edflow FROM PUBLIC"))
+        Base.metadata.create_all(bind=connection)
+        if engine.dialect.name == "postgresql":
+            for table in Base.metadata.sorted_tables:
+                connection.execute(text(f"ALTER TABLE edflow.{table.name} ENABLE ROW LEVEL SECURITY"))
+            connection.execute(text("REVOKE ALL ON ALL TABLES IN SCHEMA edflow FROM PUBLIC"))
 
 
 class Account(Base):

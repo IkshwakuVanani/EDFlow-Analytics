@@ -43,15 +43,15 @@ Use custom dates for historical datasets. All analysis can be exported as JSON; 
 
 ## Hosted deployment
 
-The repository root contains a Vercel configuration for the frontend and Python API together. Set the Vercel project root to the repository root, not `frontend/`. The frontend uses the same-origin `/api` route. The Python API requires a persistent PostgreSQL `DATABASE_URL`; it refuses to start on Vercel with ephemeral SQLite storage.
+The repository root contains a Vercel configuration for the frontend and Python API together. Set the Vercel project root to the repository root, not `frontend/`. The frontend uses the same-origin `/api` route. The Python API requires a persistent PostgreSQL `DATABASE_URL` (or the Vercel integration’s `POSTGRES_URL`); it refuses to start on Vercel with ephemeral SQLite storage.
 
 Required server configuration:
 
-- `DATABASE_URL`: PostgreSQL connection string; managed `postgres://` URLs are normalized to psycopg.
+- `DATABASE_URL` or `POSTGRES_URL`: PostgreSQL connection string; managed `postgres://` URLs are normalized to psycopg.
 - `EDFLOW_ALLOW_REGISTRATION`: `true` to allow account creation, `false` to close registration.
 - `CORS_ORIGINS`: comma-separated frontend origins only when frontend and API use different origins.
 
-Database passwords and connection strings belong in provider environment settings, never Git. Initial tables are created from SQLAlchemy metadata on API startup. Existing deployments must have the new tables initialized before serving traffic; schema evolution beyond this initial addition needs reviewed migrations.
+Database passwords and connection strings belong in provider environment settings, never Git. Operations tables are created from SQLAlchemy metadata in a private `edflow` PostgreSQL schema on API startup, with public schema/table privileges revoked and row-level security enabled. Hospital access is enforced by the API through account membership. The direct database connection must own these tables; do not expose the private schema through a public data API. Existing deployments must have the new tables initialized before serving traffic; schema evolution beyond this initial addition needs reviewed migrations.
 
 Alternatively deploy `render.yaml` to host the operations API with managed PostgreSQL, set `VITE_API_BASE_URL` to the API URL, and rebuild the frontend. Database hosting must be provisioned separately; the old static frontend deployment alone cannot provide shared persistence.
 

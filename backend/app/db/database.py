@@ -13,9 +13,9 @@ def normalize_database_url(url: str) -> str:
     return url
 
 
-DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", "sqlite:///./edflow.db"))
+DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL") or "sqlite:///./edflow.db")
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {"prepare_threshold": None}
 engine = create_engine(
     DATABASE_URL,
     connect_args=connect_args,
@@ -30,6 +30,7 @@ def init_db() -> None:
     from app.db import models, operations  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    operations.init_operations_db()
 
 
 def get_db() -> Generator[Session, None, None]:

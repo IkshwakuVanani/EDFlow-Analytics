@@ -5,14 +5,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.api.routes_operations import router
-from app.db.database import SessionLocal, init_db
+from app.db.database import SessionLocal
+from app.db.operations import init_operations_db
 
 
 @asynccontextmanager
 async def lifespan(app):
-    if os.getenv('VERCEL') and not os.getenv('DATABASE_URL', '').startswith(('postgres://', 'postgresql://', 'postgresql+psycopg://')):
+    if os.getenv('VERCEL') and not (os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL', '')).startswith(('postgres://', 'postgresql://', 'postgresql+psycopg://')):
         raise RuntimeError('Set DATABASE_URL to a persistent PostgreSQL database before deploying EDFlow.')
-    init_db()
+    init_operations_db()
     yield
 
 
