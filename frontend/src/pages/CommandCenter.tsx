@@ -14,6 +14,7 @@ import { CapacityTimeline } from "../components/capacity/CapacityTimeline";
 import { StatusBadge } from "../components/capacity/StatusBadge";
 
 type CommandCenterProps = {
+  windowMinutes: number;
   onOpenSimulation: () => void;
 };
 
@@ -24,16 +25,20 @@ const kpiIcons = {
   sla_tasks: AlertTriangle,
 };
 
-export function CommandCenter({ onOpenSimulation }: CommandCenterProps) {
+export function CommandCenter({ onOpenSimulation, windowMinutes }: CommandCenterProps) {
   const [payload, setPayload] = useState<CapacityCommandCenter | null>(null);
   const [selectedActionId, setSelectedActionId] = useState<string>("");
 
   useEffect(() => {
-    void api.commandCenter(360).then((data) => {
+    let cancelled = false;
+    setPayload(null);
+    void api.commandCenter(windowMinutes).then((data) => {
+      if (cancelled) return;
       setPayload(data);
       setSelectedActionId(data.selected_action_id);
     });
-  }, []);
+    return () => { cancelled = true; };
+  }, [windowMinutes]);
 
   const selectedAction = useMemo(
     () => payload?.actions.find((action) => action.id === selectedActionId) ?? payload?.actions[0] ?? null,
@@ -67,7 +72,7 @@ export function CommandCenter({ onOpenSimulation }: CommandCenterProps) {
 
       <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.75fr)_minmax(340px,0.75fr)]">
         <CapacityPanel
-          title="Capacity timeline (next 6 hours)"
+          title={`Capacity timeline (${windowMinutes / 60} hour scenario)`}
           subtitle={`Risk window ${payload.risk_window}`}
           action={<TimelineControls />}
         >

@@ -1,189 +1,426 @@
-import { useMemo, useState } from "react";
 import {
-  ActivitySquare,
-  AlertTriangle,
-  BedDouble,
-  Bell,
-  ChevronDown,
-  FileBarChart,
-  GitFork,
-  Grid2X2,
-  ListChecks,
-  LucideIcon,
-  PlayCircle,
-  RefreshCcw,
-  Settings,
-  ShieldCheck,
-  Siren,
-} from "lucide-react";
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useCallback,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import { Activity, ArrowRight, LogOut, Plus, RefreshCw } from "lucide-react";
+import {
+  errorText,
+  ops,
+  request,
+  savedSession,
+  saveSession,
+  type Hospital,
+} from "./api/operations";
+const Workspace = lazy(() => import("./components/operations/Workspace"));
 
-import { ActionConsolePage } from "./pages/ActionConsole";
-import { BlockerQueue } from "./pages/BlockerQueue";
-import { CapacityGraphPage } from "./pages/CapacityGraph";
-import { CommandCenter } from "./pages/CommandCenter";
-import { Evidence } from "./pages/Evidence";
-import { Simulation } from "./pages/Simulation";
-
-type PageId = "command" | "graph" | "blockers" | "actions" | "simulation" | "evidence";
-
-type NavItem = {
-  id: PageId;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-};
-
-const navItems: NavItem[] = [
-  { id: "command", label: "Command Center", description: "Live capacity conversion", icon: Grid2X2 },
-  { id: "graph", label: "Capacity Graph", description: "Boarders to ready beds", icon: GitFork },
-  { id: "blockers", label: "Blocker Queue", description: "Ranked by bed-hour impact", icon: Siren },
-  { id: "actions", label: "Action Console", description: "Owners, SLAs, escalation", icon: ListChecks },
-  { id: "simulation", label: "Simulation", description: "What-if capacity levers", icon: PlayCircle },
-  { id: "evidence", label: "Evidence", description: "CMS public-data analytics", icon: FileBarChart },
-];
-
-function App() {
-  const [page, setPage] = useState<PageId>("command");
-  const active = useMemo(() => navItems.find((item) => item.id === page) ?? navItems[0], [page]);
-
-  return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <div className="grid min-h-screen lg:grid-cols-[246px_1fr]">
-        <aside className="bg-[#061927] text-white">
-          <div className="flex flex-col lg:min-h-full">
-            <div className="border-b border-white/10 px-5 py-5">
-              <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 grid-cols-2 gap-1 rounded-md p-1">
-                  <span className="rounded-sm bg-teal-400" />
-                  <span className="rounded-sm bg-slate-500" />
-                  <span className="rounded-sm bg-slate-300" />
-                  <span className="rounded-sm bg-teal-600" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold leading-5">EDFlow</h1>
-                  <p className="text-sm font-semibold leading-4 text-slate-200">Orchestrator</p>
-                </div>
-              </div>
-            </div>
-
-            <nav className="grid grid-cols-2 gap-1 px-3 py-4 lg:grid-cols-1 lg:py-5">
-              {navItems.map((item) => {
-                const selected = item.id === page;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setPage(item.id)}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left transition lg:py-3 ${
-                      selected ? "bg-teal-700 text-white" : "text-slate-300 hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold">{item.label}</span>
-                      <span className={`hidden truncate text-xs sm:block ${selected ? "text-teal-50" : "text-slate-500"}`}>{item.description}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            <div className="mt-auto hidden space-y-4 border-t border-white/10 px-4 py-5 lg:block">
-              <div className="rounded-md border border-white/15 bg-white/5 p-3">
-                <p className="text-xs font-semibold text-slate-400">Hospital / Unit</p>
-                <select className="mt-2 h-9 w-full rounded-md border border-white/15 bg-[#0b2637] px-3 text-sm text-white">
-                  <option>Cityview Medical Center</option>
-                </select>
-                <select className="mt-2 h-9 w-full rounded-md border border-white/15 bg-[#0b2637] px-3 text-sm text-white">
-                  <option>Med-Surg Capacity</option>
-                </select>
-                <p className="mt-3 text-xs text-slate-400">Updated: 08:24 AM</p>
-              </div>
-
-              <button className="flex w-full items-center justify-between rounded-md px-2 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white">
-                <span className="flex items-center gap-2"><Bell size={17} /> Notifications</span>
-                <span className="rounded-full bg-teal-600 px-2 py-0.5 text-xs font-semibold text-white">6</span>
-              </button>
-              <button className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white">
-                <Settings size={17} /> Settings
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        <main className="min-w-0">
-          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:px-6">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex min-w-[245px] shrink-0 items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
-                  <BedDouble size={22} />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="whitespace-nowrap text-xl font-semibold text-slate-950">Med-Surg Capacity</h2>
-                    <ChevronDown size={16} className="text-slate-500" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap">
-                <div className="flex items-center gap-2">
-                  <span className="hidden whitespace-nowrap text-xs font-semibold text-slate-500 md:inline">Time horizon</span>
-                  <div className="flex items-center rounded-md border border-slate-200 bg-slate-50 p-1">
-                    {["2h", "6h", "12h", "24h"].map((item) => (
-                      <button
-                        key={item}
-                        className={`h-8 min-w-12 rounded px-3 text-xs font-semibold ${item === "6h" ? "bg-teal-700 text-white" : "text-slate-500 hover:bg-white"}`}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex min-w-[112px] items-center gap-2 whitespace-nowrap text-sm text-slate-600">
-                  <ActivitySquare size={17} />
-                  <span className="font-semibold text-slate-950">Now</span>
-                  <span>08:24 AM</span>
-                </div>
-                <div className="hidden items-center gap-2 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 py-2 text-xs md:flex">
-                  <span className="font-semibold text-slate-500">Service health</span>
-                  {["EHR", "ADT", "Capacity", "RTLS"].map((item) => (
-                    <span key={item} className="inline-flex items-center gap-1 text-slate-600">
-                      <ShieldCheck size={13} className="text-teal-700" />
-                      {item}
-                      <span className="h-1.5 w-1.5 rounded-full bg-teal-600" />
-                    </span>
-                  ))}
-                  <span className="inline-flex items-center gap-1 text-amber-700">
-                    <Siren size={13} />
-                    EVS
-                  </span>
-                </div>
-                <button className="hidden h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 md:flex">
-                  <RefreshCcw size={15} />
-                </button>
-              </div>
-            </div>
-          </header>
-
-          <div className="px-4 py-4 md:px-6">
-            <div className="mb-4 flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-              <AlertTriangle className="mt-0.5 shrink-0 text-amber-700" size={17} />
-              <p>
-                Synthetic demo mode. EDFlow Orchestrator uses generated operations data here, contains no PHI, and is not clinical decision support.
-              </p>
-            </div>
-            {active.id === "command" ? <CommandCenter onOpenSimulation={() => setPage("simulation")} /> : null}
-            {active.id === "graph" ? <CapacityGraphPage /> : null}
-            {active.id === "blockers" ? <BlockerQueue /> : null}
-            {active.id === "actions" ? <ActionConsolePage onOpenSimulation={() => setPage("simulation")} /> : null}
-            {active.id === "simulation" ? <Simulation /> : null}
-            {active.id === "evidence" ? <Evidence /> : null}
-          </div>
-        </main>
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? (
+      <div className="empty">
+        <h2>Something interrupted this page</h2>
+        <p>Your saved hospital data is still on the server.</p>
+        <button className="btn" onClick={() => location.reload()}>
+          Reload page
+        </button>
       </div>
-    </div>
+    ) : (
+      this.props.children
+    );
+  }
+}
+function Auth({ onSignedIn }: { onSignedIn: () => void }) {
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    setBusy(true);
+    setError("");
+    try {
+      saveSession(
+        await ops.auth(
+          mode,
+          String(data.get("username")),
+          String(data.get("password")),
+        ),
+      );
+      onSignedIn();
+    } catch (error) {
+      setError(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="auth-layout">
+      <section className="auth-story">
+        <div className="brand">
+          <Activity /> EDFlow <span>Orchestrator</span>
+        </div>
+        <div>
+          <p className="eyebrow">Hospital operations, connected</p>
+          <h1>
+            Understand the flow.
+            <br />
+            Coordinate the next step.
+          </h1>
+          <p>
+            Bring your hospital’s process and aggregate observations into one
+            workspace. Track queues, examine trends, and give every operational
+            task an owner.
+          </p>
+          <div className="auth-features">
+            <span>Custom flow maps</span>
+            <span>Time-series analysis</span>
+            <span>Shared task history</span>
+          </div>
+        </div>
+        <p className="muted">
+          Data-driven operations. No AI or patient-level predictions.
+        </p>
+      </section>
+      <section className="auth-form">
+        <div className="card">
+          <h2>{mode === "login" ? "Welcome back" : "Create your account"}</h2>
+          <p className="muted">
+            {mode === "login"
+              ? "Sign in to your hospital workspaces."
+              : "Start with an empty workspace and your own data."}
+          </p>
+          <form onSubmit={submit} className="form-stack">
+            <label>
+              Username
+              <input
+                name="username"
+                autoComplete="username"
+                required
+                minLength={3}
+                maxLength={80}
+                pattern="[a-zA-Z0-9_.@\-]+"
+              />
+            </label>
+            <label>
+              Password
+              <input
+                name="password"
+                type="password"
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
+                required
+                minLength={12}
+                maxLength={200}
+              />
+            </label>
+            <p className="muted text-xs">
+              Use at least 12 characters. Store your password securely; email
+              recovery is not configured.
+            </p>
+            {error && (
+              <p className="notice error" role="alert">
+                {error}
+              </p>
+            )}
+            <button className="btn primary w-full" disabled={busy}>
+              {busy
+                ? "Please wait…"
+                : mode === "login"
+                  ? "Sign in"
+                  : "Create account"}
+              <ArrowRight size={16} />
+            </button>
+          </form>
+          <button
+            className="btn link w-full mt-4"
+            onClick={() => {
+              setMode(mode === "login" ? "register" : "login");
+              setError("");
+            }}
+          >
+            {mode === "login"
+              ? "Create an account"
+              : "Already registered? Sign in"}
+          </button>
+        </div>
+      </section>
+    </main>
   );
 }
-
-export default App;
+export default function App() {
+  const [session, setSession] = useState(savedSession);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [selected, setSelected] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [newHospital, setNewHospital] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const updateHospital = useCallback(
+    (next: Hospital) =>
+      setHospitals((items) => items.map((h) => (h.id === next.id ? next : h))),
+    [],
+  );
+  const hospital = hospitals.find((h) => h.id === selected);
+  async function reload() {
+    setBusy(true);
+    setError("");
+    try {
+      const items = await ops.hospitals();
+      setHospitals(items);
+      setSelected((current) =>
+        items.some((h) => h.id === current) ? current : (items[0]?.id ?? ""),
+      );
+    } catch (error) {
+      setError(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  useEffect(() => {
+    if (session) void reload();
+  }, [session?.token]);
+  useEffect(() => {
+    const expired = () => {
+      setSession(null);
+      setHospitals([]);
+      setError("");
+    };
+    window.addEventListener("edflow-session-expired", expired);
+    return () => window.removeEventListener("edflow-session-expired", expired);
+  }, []);
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    setBusy(true);
+    setError("");
+    try {
+      const hospital = await ops.createHospital(
+        String(data.get("name")),
+        String(data.get("timezone")),
+      );
+      setHospitals((items) => [...items, hospital]);
+      setSelected(hospital.id);
+      setNewHospital(false);
+    } catch (error) {
+      setError(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function join(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    setBusy(true);
+    setError("");
+    try {
+      const hospital = await ops.join(String(data.get("code")));
+      await reload();
+      setSelected(hospital.id);
+      setJoining(false);
+    } catch (error) {
+      setError(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function logout() {
+    setError("");
+    try {
+      await request("/auth/logout", { method: "POST" });
+      saveSession(null);
+      setSession(null);
+      setHospitals([]);
+    } catch (error) {
+      setError(errorText(error));
+    }
+  }
+  if (!session) return <Auth onSignedIn={() => setSession(savedSession())} />;
+  return (
+    <ErrorBoundary>
+      <div className="app-shell">
+        <header className="app-header">
+          <a className="brand" href="#main">
+            <Activity />
+            EDFlow <span>Orchestrator</span>
+          </a>
+          <div className="header-actions">
+            <span className="muted text-sm">{session.username}</span>
+            <button className="btn subtle" onClick={() => void logout()}>
+              <LogOut size={16} />
+              Sign out
+            </button>
+          </div>
+        </header>
+        <main id="main" className="workspace">
+          <div className="workspace-heading">
+            <div>
+              <p className="eyebrow">Operations workspace</p>
+              <h1>Hospital flow, in focus.</h1>
+              <p className="muted">
+                Your observations. A shared picture. Accountable action.
+              </p>
+            </div>
+            <div className="toolbar">
+              <label className="sr-only" htmlFor="hospital">
+                Hospital workspace
+              </label>
+              <select
+                id="hospital"
+                value={selected}
+                onChange={(e) => setSelected(e.target.value)}
+                disabled={!hospitals.length}
+              >
+                <option value="" disabled>
+                  Select hospital
+                </option>
+                {hospitals.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="btn subtle icon"
+                aria-label="Refresh hospitals"
+                disabled={busy}
+                onClick={() => void reload()}
+              >
+                <RefreshCw size={17} />
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  setNewHospital(!newHospital);
+                  setJoining(false);
+                }}
+                aria-expanded={newHospital}
+              >
+                <Plus size={16} />
+                New hospital
+              </button>
+              <button
+                className="btn subtle"
+                onClick={() => {
+                  setJoining(!joining);
+                  setNewHospital(false);
+                }}
+                aria-expanded={joining}
+              >
+                Join workspace
+              </button>
+            </div>
+          </div>
+          {error && (
+            <p className="notice error" role="alert">
+              {error}
+            </p>
+          )}
+          {newHospital && (
+            <form className="card inline-form" onSubmit={create}>
+              <label>
+                Hospital name
+                <input
+                  name="name"
+                  required
+                  minLength={2}
+                  maxLength={160}
+                  placeholder="Hospital or facility name"
+                />
+              </label>
+              <label>
+                Hospital time zone
+                <input
+                  name="timezone"
+                  defaultValue={
+                    Intl.DateTimeFormat().resolvedOptions().timeZone
+                  }
+                  required
+                  placeholder="America/New_York"
+                />
+              </label>
+              <button className="btn primary" disabled={busy}>
+                Create workspace
+              </button>
+              <button
+                type="button"
+                className="btn subtle"
+                onClick={() => setNewHospital(false)}
+              >
+                Cancel
+              </button>
+            </form>
+          )}
+          {joining && (
+            <form className="card inline-form" onSubmit={join}>
+              <label>
+                Single-use invitation code
+                <input name="code" required minLength={20} autoComplete="off" />
+              </label>
+              <button className="btn primary" disabled={busy}>
+                Join hospital
+              </button>
+              <button
+                type="button"
+                className="btn subtle"
+                onClick={() => setJoining(false)}
+              >
+                Cancel
+              </button>
+            </form>
+          )}
+          {hospital ? (
+            <Suspense
+              fallback={
+                <p className="notice" role="status">
+                  Loading workspace…
+                </p>
+              }
+            >
+              <Workspace
+                key={hospital.id}
+                hospital={hospital}
+                onHospital={updateHospital}
+              />
+            </Suspense>
+          ) : (
+            <section className="card empty">
+              <Activity size={36} />
+              <h2>
+                {busy ? "Loading your workspaces…" : "Start with your hospital"}
+              </h2>
+              <p>
+                Create a workspace, define its flow, and import timestamped
+                aggregate records.
+                <br />
+                Or join a colleague’s workspace with an invitation code.
+              </p>
+              <button
+                className="btn primary"
+                onClick={() => setNewHospital(true)}
+              >
+                Create a hospital
+              </button>
+            </section>
+          )}
+          <footer>
+            EDFlow · Aggregate operations analysis · No AI · All timestamps
+            include a time zone
+          </footer>
+        </main>
+      </div>
+    </ErrorBoundary>
+  );
+}

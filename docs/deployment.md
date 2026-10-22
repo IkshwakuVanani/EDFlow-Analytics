@@ -1,109 +1,58 @@
-# Deployment Guide
+# Setup and deployment
 
-This project has two deployable surfaces:
+## Local development
 
-- FastAPI backend: capacity orchestration APIs plus CMS evidence APIs
-- Vite frontend: EDFlow Orchestrator command-center UI
-
-The repository includes GitHub Actions in `.github/workflows/ci.yml`. Keep the backend test job and frontend build job passing before deploying or promoting changes.
-
-The simplest public rollout is:
-
-1. Deploy the backend to Render from this GitHub repo.
-2. Deploy the frontend to Vercel or Netlify.
-3. Set the frontend API URL to the backend URL.
-4. Set backend CORS to allow the frontend URL.
-
-## Backend On Render
-
-Use the included `render.yaml` Blueprint.
-
-1. Push the repo to GitHub.
-2. In Render, create a new Blueprint from the repo.
-3. Let Render create:
-   - `edflow-orchestrator-api`
-   - `edflow-orchestrator-db`
-4. After the frontend is deployed, set the backend env var:
+Python 3.10+ and Node.js 22 are recommended.
 
 ```bash
-CORS_ORIGINS=https://your-frontend-domain.vercel.app,http://localhost:5173,http://127.0.0.1:5173
+python3 -m venv backend/.venv
+backend/.venv/bin/pip install -r backend/requirements.txt
+backend/.venv/bin/python -m uvicorn app.production:app --app-dir backend --reload
 ```
 
-The backend uses synthetic operations seed data by default:
+In another terminal:
 
 ```bash
-EDFLOW_SEED_SAMPLE=true
+npm ci --prefix frontend
+npm run dev --prefix frontend
 ```
 
-The app normalizes managed PostgreSQL connection strings to the installed `psycopg` SQLAlchemy driver, so Render-style `postgres://` and `postgresql://` URLs are supported.
+The development frontend calls `http://localhost:8000`. By default local Python runs use SQLite. Docker Compose uses PostgreSQL with a persistent volume. `app.production` exposes only the authenticated hospital operations routes; `app.main` also retains the legacy CMS research endpoints.
 
-## Frontend On Vercel
+Create an account with a unique username and a password of at least 12 characters. Sessions expire after seven days and are kept in the browser tab's session storage. Sign-out revokes the server-side token. Email-based password recovery is not configured.
 
-Deploy only the `frontend/` directory.
+## Data input
 
-Vercel settings:
+Create a hospital with its IANA time zone, then define its flow in the Flow map tab. A JSON flow has `nodes` (unique `id`, `label`, `kind`, `owner`) and directed `edges` (`source`, `target`, `label`). Graphs support up to 100 stages and 300 connections, including cyclical processes. Images and PDFs must be transcribed into structured stages and connections. Stages referenced by observations or tasks cannot be removed.
 
-```text
-Framework Preset: Vite
-Root Directory: frontend
-Build Command: npm run build
-Output Directory: dist
+Import up to 5,000 CSV observations at a time, using exactly these columns:
+
+```csv
+stage_id,observed_at,waiting,occupied,staffed_capacity,arrivals,departures,interval_minutes
 ```
 
-Environment variable:
+Use ISO timestamps with an offset, such as `2026-10-22T14:00:00-04:00`. Waiting, occupied, and staffed capacity are point-in-time counts. Arrivals and departures cover the interval ending at the observation timestamp. Non-overlapping intervals prevent double-counted throughput. Exact duplicates are skipped; conflicting duplicates reject the batch. Validate imports before saving. The import schema contains only aggregate fields. Do not enter patient identifiers or clinical information into workspace names, task notes, or other free-text fields.
 
-```bash
-VITE_API_BASE_URL=https://your-render-backend-url.onrender.com
-```
+Use the manual observation form for updates, CSV imports for batches, or the authenticated REST API for a polling/feed integration. EDFlow refreshes saved analysis and tasks every 15 seconds while the browser tab is visible. It does not connect to an EHR automatically.
 
-For a production deployment, use Vercel's Git integration so every push runs the Vercel build. Keep preview deployments for branches and promote only after CI passes.
+## Analysis semantics
 
-## Frontend On Netlify
+The overall chart includes only timestamps where every configured stage reported. Stage summaries use each stage's latest record in the window, with missing or stale coverage disclosed. Counts across stages are not unique patient totals. Throughput is departures divided by the duration of complete reporting intervals inside the analysis window. Queue changes compare first and last observations. Trend slopes use elapsed hours and require three observations spanning at least 30 minutes. A 60-minute linear extrapolation is hidden when data is more than 30 minutes old relative to the window end. These descriptive calculations do not establish causation or validate clinical decisions.
 
-Netlify settings:
+Use custom dates for historical datasets. All analysis can be exported as JSON; saved observations can be exported as CSV. Workspace owners can generate single-use, 24-hour invitation codes; collaborators can edit that hospital's flow, observations, and tasks. Optimistic versions prevent silently overwriting another user's graph or task edits.
 
-```text
-Base directory: frontend
-Build command: npm run build
-Publish directory: frontend/dist
-```
+## Hosted deployment
 
-Environment variable:
+The repository root contains a Vercel configuration for the frontend and Python API together. Set the Vercel project root to the repository root, not `frontend/`. The frontend uses the same-origin `/api` route. The Python API requires a persistent PostgreSQL `DATABASE_URL`; it refuses to start on Vercel with ephemeral SQLite storage.
 
-```bash
-VITE_API_BASE_URL=https://your-render-backend-url.onrender.com
-```
+Required server configuration:
 
-## Smoke Tests
+- `DATABASE_URL`: PostgreSQL connection string; managed `postgres://` URLs are normalized to psycopg.
+- `EDFLOW_ALLOW_REGISTRATION`: `true` to allow account creation, `false` to close registration.
+- `CORS_ORIGINS`: comma-separated frontend origins only when frontend and API use different origins.
 
-After deployment:
+Database passwords and connection strings belong in provider environment settings, never Git. Initial tables are created from SQLAlchemy metadata on API startup. Existing deployments must have the new tables initialized before serving traffic; schema evolution beyond this initial addition needs reviewed migrations.
 
-```bash
-curl https://your-render-backend-url.onrender.com/health
-curl https://your-render-backend-url.onrender.com/capacity/command-center
-```
+Alternatively deploy `render.yaml` to host the operations API with managed PostgreSQL, set `VITE_API_BASE_URL` to the API URL, and rebuild the frontend. Database hosting must be provisioned separately; the old static frontend deployment alone cannot provide shared persistence.
 
-Then open the frontend and click:
-
-1. Command Center
-2. Mark Done
-3. Simulation
-4. Evidence
-
-## Real-World Functionality Checklist
-
-The current public deployment target is a synthetic-data demo. Before using this as a real hospital operations product, add:
-
-- Authentication and role-based access for operations users.
-- Persistent capacity action tables for assignment, notes, escalation, and completion history.
-- Database migrations for schema changes.
-- Observability: structured logs, error monitoring, uptime checks, and deployment alerts.
-- Rate limiting, strict CORS, and a security review before any non-demo exposure.
-- A real event ingestion path for ADT-like events, bed status, EVS state, transport queues, staffing, and discharge barriers.
-- Compliance planning before storing any PHI or real patient-level operational data.
-
-## Notes
-
-- Render free services may sleep after inactivity, so the first API request can be slow.
-- Do not deploy real patient data to this prototype.
-- If the frontend cannot reach the backend, it falls back to local synthetic demo data.
+Verify registration → hospital creation → flow save → CSV validation/import → analysis → task update → sign-out/sign-in. Repeat from a second account joined by an invitation to verify shared state and access isolation. Test `/health` (or `/api/health` on Vercel) and monitor server logs. Account access does not imply the application is approved to process patient-identifying data.

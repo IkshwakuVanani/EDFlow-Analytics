@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "")).replace(/\/$/, "");
 
 export type StateSummary = {
   state: string;
@@ -455,10 +455,29 @@ function buildMockSimulation(scenario: SimulationScenario): SimulationResult {
   };
 }
 
+type ConnectionStatus = "connecting" | "connected" | "fallback";
+let connectionStatus: ConnectionStatus = "connecting";
+const connectionListeners = new Set<() => void>();
+const requestStatuses = new Map<string, "connected" | "fallback">();
+export const getConnectionStatus = () => connectionStatus;
+export function subscribeConnectionStatus(listener: () => void) {
+  connectionListeners.add(listener);
+  return () => { connectionListeners.delete(listener); };
+}
+function updateConnectionStatus(path: string, result: "connected" | "fallback") {
+  requestStatuses.set(path.split("?")[0], result);
+  const status = [...requestStatuses.values()].includes("fallback") ? "fallback" : "connected";
+  if (connectionStatus === status) return;
+  connectionStatus = status;
+  connectionListeners.forEach(listener => listener());
+}
+
 async function request<T>(path: string, fallback: T, init?: RequestInit): Promise<T> {
   try {
+    if (!API_BASE_URL) throw new Error("No API configured: local demo mode");
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
+      signal: AbortSignal.timeout(10000),
       headers: {
         "Content-Type": "application/json",
         ...(init?.headers as Record<string, string> | undefined),
@@ -467,8 +486,11 @@ async function request<T>(path: string, fallback: T, init?: RequestInit): Promis
     if (!response.ok) {
       throw new Error(`Request failed: ${response.status}`);
     }
-    return (await response.json()) as T;
+    const data = (await response.json()) as T;
+    updateConnectionStatus(path, "connected");
+    return data;
   } catch {
+    updateConnectionStatus(path, "fallback");
     return fallback;
   }
 }
@@ -478,6 +500,7 @@ export const api = {
     request<CapacityCommandCenter>(`/capacity/command-center?window_minutes=${windowMinutes}`, {
       ...mockCapacityCommandCenter,
       horizon_minutes: windowMinutes,
+      timeline: mockCapacityTimeline.slice(0, Math.floor(windowMinutes / 60) + 1),
     }),
   capacityBlockers: () => request<CapacityBlocker[]>("/capacity/blockers", mockCapacityBlockers),
   capacityActions: () => request<CapacityAction[]>("/capacity/actions", mockCapacityActions),
@@ -494,6 +517,10 @@ export const api = {
     return request<CapacityAction>(`/capacity/actions/${actionId}`, fallback, {
       method: "PATCH",
       body: JSON.stringify(update),
+    }).then(updated => {
+      const index = mockCapacityActions.findIndex(item => item.id === actionId);
+      if (index >= 0) mockCapacityActions[index] = updated;
+      return updated;
     });
   },
   simulateCapacity: (scenario: SimulationScenario = defaultScenario) =>

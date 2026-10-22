@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test scripts/test-imports.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",

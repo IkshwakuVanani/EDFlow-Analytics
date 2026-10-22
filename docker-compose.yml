@@ -20,7 +20,7 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg://edflow:edflow@postgres:5432/edflow
-      EDFLOW_SEED_SAMPLE: "true"
+      EDFLOW_ALLOW_REGISTRATION: "true"
     ports:
       - "8000:8000"
     depends_on:

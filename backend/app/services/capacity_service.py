@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timezone
 from typing import Optional
 
+from sqlalchemy.orm import Session
+
+from app.db import models
 from app.schemas.capacity import CapacityActionUpdate, SimulationScenario
 
 
@@ -73,7 +77,25 @@ _ACTIONS = [
 ]
 
 
-def get_command_center(window_minutes: int = 360) -> dict:
+def ensure_action_states(db: Session) -> None:
+    for action in _ACTIONS:
+        existing = db.get(models.CapacityActionState, action["id"])
+        if existing is None:
+            db.add(
+                models.CapacityActionState(
+                    action_id=action["id"],
+                    status=action["status"],
+                    owner=action["owner"],
+                    escalation_state=action["escalation_state"],
+                    severity=action["severity"],
+                    updated_at=_now_utc(),
+                )
+            )
+    db.commit()
+
+
+def get_command_center(window_minutes: int = 360, db: Optional[Session] = None) -> dict:
+    actions = get_actions(db)
     return {
         "product_name": "EDFlow Orchestrator",
         "hospital_name": "Cityview Medical Center",
@@ -88,7 +110,7 @@ def get_command_center(window_minutes: int = 360) -> dict:
         "flow_nodes": deepcopy(FLOW_NODES),
         "flow_edges": deepcopy(FLOW_EDGES),
         "blockers": get_blockers(),
-        "actions": get_actions(),
+        "actions": actions,
         "selected_action_id": _ACTIONS[0]["id"],
     }
 
@@ -97,11 +119,20 @@ def get_blockers() -> list[dict]:
     return sorted(deepcopy(BLOCKERS), key=lambda row: row["estimated_bed_hour_impact"], reverse=True)
 
 
-def get_actions() -> list[dict]:
-    return sorted(deepcopy(_ACTIONS), key=lambda row: row["priority"])
+def get_actions(db: Optional[Session] = None) -> list[dict]:
+    if db is None:
+        return sorted(deepcopy(_ACTIONS), key=lambda row: row["priority"])
+
+    ensure_action_states(db)
+    states = {state.action_id: state for state in db.query(models.CapacityActionState).all()}
+    actions = [_apply_state(action, states.get(action["id"])) for action in _ACTIONS]
+    return sorted(actions, key=lambda row: row["priority"])
 
 
-def update_action(action_id: str, update: CapacityActionUpdate) -> Optional[dict]:
+def update_action(action_id: str, update: CapacityActionUpdate, db: Optional[Session] = None) -> Optional[dict]:
+    if db is not None:
+        return _update_persisted_action(action_id, update, db)
+
     for action in _ACTIONS:
         if action["id"] == action_id:
             payload = update.model_dump(exclude_none=True)
@@ -169,8 +200,89 @@ def simulate_capacity(scenario: SimulationScenario) -> dict:
 
 
 def _windowed_timeline(window_minutes: int) -> list[dict]:
-    if window_minutes <= 120:
-        return deepcopy(TIMELINE[:5])
-    if window_minutes <= 360:
-        return deepcopy(TIMELINE)
-    return deepcopy(TIMELINE)
+    return deepcopy(TIMELINE[: window_minutes // 60 + 1])
+
+
+def _update_persisted_action(action_id: str, update: CapacityActionUpdate, db: Session) -> Optional[dict]:
+    base_action = next((action for action in _ACTIONS if action["id"] == action_id), None)
+    if base_action is None:
+        return None
+
+    ensure_action_states(db)
+    state = db.get(models.CapacityActionState, action_id)
+    if state is None:
+        return None
+
+    previous = _state_snapshot(state)
+    payload = update.model_dump(exclude_none=True)
+
+    if "owner" in payload:
+        state.owner = payload["owner"]
+    if "escalation_state" in payload:
+        state.escalation_state = payload["escalation_state"]
+    if "status" in payload:
+        state.status = payload["status"]
+        if state.status == "done":
+            state.escalation_state = "resolved"
+        elif state.status == "escalated":
+            state.escalation_state = "escalated"
+
+    state.severity = _severity_for_escalation(state.escalation_state)
+    state.note = payload.get("note", state.note)
+    state.updated_at = _now_utc()
+
+    db.add(
+        models.CapacityActionEvent(
+            action_id=action_id,
+            event_type="action_update",
+            previous_state_json=previous,
+            new_state_json=_state_snapshot(state),
+            note=payload.get("note"),
+        )
+    )
+    db.commit()
+    db.refresh(state)
+    return _apply_state(base_action, state)
+
+
+def _apply_state(action: dict, state: Optional[models.CapacityActionState]) -> dict:
+    payload = deepcopy(action)
+    if state is None:
+        return payload
+    payload.update(
+        {
+            "status": state.status,
+            "owner": state.owner,
+            "escalation_state": state.escalation_state,
+            "severity": state.severity,
+            "last_updated": _format_action_time(state.updated_at),
+        }
+    )
+    return payload
+
+
+def _state_snapshot(state: models.CapacityActionState) -> dict:
+    return {
+        "status": state.status,
+        "owner": state.owner,
+        "escalation_state": state.escalation_state,
+        "severity": state.severity,
+    }
+
+
+def _severity_for_escalation(escalation_state: str) -> str:
+    if escalation_state in {"at_risk", "escalated"}:
+        return "high"
+    if escalation_state == "monitor":
+        return "moderate"
+    return "low"
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _format_action_time(value: Optional[datetime]) -> str:
+    if value is None:
+        return "08:24 AM"
+    return value.strftime("%I:%M %p")

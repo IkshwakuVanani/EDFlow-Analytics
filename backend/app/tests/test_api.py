@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
-from app.db.database import normalize_database_url
+from app.db import models
+from app.db.database import SessionLocal, normalize_database_url
 from app.main import app
 
 
@@ -90,3 +91,47 @@ def test_capacity_action_update_and_simulation() -> None:
     assert update.json()["status"] == "in_progress"
     assert simulation.status_code == 200
     assert simulation.json()["boarding_hours_reduced"] > 0
+
+
+def test_capacity_action_update_persists_with_audit_event() -> None:
+    with TestClient(app) as client:
+        update = client.patch(
+            "/capacity/actions/act-evs-priority",
+            json={"status": "escalated", "owner": "House Supervisor", "note": "Escalated during deployment test"},
+        )
+        actions = client.get("/capacity/actions").json()
+
+    matching_action = next(action for action in actions if action["id"] == "act-evs-priority")
+
+    assert update.status_code == 200
+    assert matching_action["status"] == "escalated"
+    assert matching_action["owner"] == "House Supervisor"
+    assert matching_action["escalation_state"] == "escalated"
+
+    db = SessionLocal()
+    try:
+        event = (
+            db.query(models.CapacityActionEvent)
+            .filter(models.CapacityActionEvent.action_id == "act-evs-priority")
+            .order_by(models.CapacityActionEvent.id.desc())
+            .first()
+        )
+    finally:
+        db.close()
+
+    assert event is not None
+    assert event.new_state_json["status"] == "escalated"
+
+
+def test_capacity_horizon_filters_hourly_timeline() -> None:
+    with TestClient(app) as client:
+        short = client.get("/capacity/command-center?window_minutes=120").json()
+        medium = client.get("/capacity/command-center?window_minutes=360").json()
+        full = client.get("/capacity/command-center?window_minutes=720").json()
+        invalid = client.get("/capacity/command-center?window_minutes=1440")
+    assert [point["time"] for point in short["timeline"]] == ["08:00", "09:00", "10:00"]
+    assert len(medium["timeline"]) == 7
+    assert medium["timeline"][-1]["time"] == "14:00"
+    assert len(full["timeline"]) == 13
+    assert full["timeline"][-1]["time"] == "20:00"
+    assert invalid.status_code == 422

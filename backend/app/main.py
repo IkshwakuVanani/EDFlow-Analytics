@@ -5,8 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api import routes_capacity, routes_ed, routes_hospitals, routes_models, routes_quality
+from app.api import routes_operations, routes_capacity, routes_ed, routes_hospitals, routes_models, routes_quality
 from app.db.database import SessionLocal, init_db
+from app.services.capacity_service import ensure_action_states
 from app.services.sample_data import seed_sample_data
 
 
@@ -20,10 +21,11 @@ def _cors_origins() -> list[str]:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    if os.getenv("EDFLOW_SEED_SAMPLE", "true").lower() in {"1", "true", "yes"}:
+    if os.getenv("EDFLOW_SEED_SAMPLE", "false").lower() in {"1", "true", "yes"}:
         db = SessionLocal()
         try:
             seed_sample_data(db)
+            ensure_action_states(db)
         finally:
             db.close()
     yield
@@ -31,8 +33,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="EDFlow Orchestrator API",
-    version="0.2.0",
-    description="Hospital capacity orchestration prototype for med-surg bed conversion and ED boarding reduction.",
+    version="1.0.0",
+    description="Hospital flow capture, time-series analysis, and team coordination.",
     lifespan=lifespan,
 )
 
@@ -55,7 +57,7 @@ def health() -> dict:
     return {
         "status": "ok",
         "service": "edflow-orchestrator-api",
-        "data_mode": "synthetic_operations_seed_plus_cms_evidence",
+        "data_mode": "hospital_observations",
     }
 
 
@@ -64,3 +66,5 @@ app.include_router(routes_hospitals.router)
 app.include_router(routes_ed.router)
 app.include_router(routes_quality.router)
 app.include_router(routes_models.router)
+
+app.include_router(routes_operations.router)

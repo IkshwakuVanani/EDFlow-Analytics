@@ -1,46 +1,27 @@
-# Test Plan
+# Verification
 
-## Automated Checks
-
-Backend:
+## Automated checks
 
 ```bash
-cd backend
-.venv/bin/python -m pytest
+python -m pytest
+npm test --prefix frontend
+npm run build --prefix frontend
 ```
 
-Frontend:
+Backend tests cover account isolation, revoked sessions, saved graphs, version conflicts, CSV batch validation and atomic import, duplicate/conflicting observations, non-overlapping count intervals, missing stages, stale data, elapsed-time trend calculations, invitation consumption, shared task updates, and action history. Legacy CMS contract tests explicitly opt into historical fixtures; the operations deployment does not seed records.
 
-```bash
-cd frontend
-npm run build
-```
+Frontend import tests cover quoted CSV, BOM/CRLF, reordered columns, missing/duplicate columns, malformed quotes, and invalid counts.
 
-Repository:
+## Browser acceptance
 
-```bash
-git diff --check
-```
+1. Register, create a hospital, add three stages and two connections, and save the flow.
+2. Upload observations for all stages at matching timestamps. Validate, then save; verify record counts and conclusions use the uploaded values.
+3. Export CSV and the analysis report. Check their fields and timestamps.
+4. Create a task, change its owner/status/notes, and inspect history.
+5. Reload and verify the flow, observations, and action state remain saved.
+6. Join a second account using an invitation. Verify shared updates appear on polling and unrelated accounts cannot access the hospital.
+7. Edit concurrently. Saving an outdated graph/task version must return a conflict and preserve the local draft.
+8. Check at 1440px desktop and 390px mobile. Buttons must remain usable and the page must not overflow horizontally; wide tables and flow maps scroll inside their cards.
+9. Disconnect the API. Show a connection error and keep previously loaded data visibly stale; never substitute sample data.
 
-## API Smoke Tests
-
-```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/capacity/command-center
-curl http://127.0.0.1:8000/capacity/blockers
-curl http://127.0.0.1:8000/capacity/actions
-curl -X POST http://127.0.0.1:8000/capacity/simulate \
-  -H "Content-Type: application/json" \
-  -d '{"extra_staffed_beds":2,"evs_rooms_prioritized":4,"transporters_added":1,"accelerated_discharges":3,"observation_overflow":0}'
-```
-
-## Manual Demo QA
-
-Verify:
-
-- Command Center loads with KPI, timeline, flow graph, blockers, actions, and action details.
-- Mark Done updates the selected action state.
-- Simulate opens the Simulation page.
-- Evidence opens the CMS analytics layer.
-- Mobile view reaches the dashboard without horizontal overflow.
-- No screen presents the app as clinical decision support.
+The local browser pass used an explicitly named “Operations validation hospital” and test observations, not real hospital or patient records. The three README screenshots show that verification workspace.

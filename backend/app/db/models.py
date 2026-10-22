@@ -168,3 +168,27 @@ class FeatureImportance(Base):
     importance = Column(Float, nullable=False)
     model_name = Column(String(160), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class CapacityActionState(Base):
+    __tablename__ = "capacity_action_state"
+
+    action_id = Column(String(80), primary_key=True, index=True)
+    status = Column(String(40), nullable=False)
+    owner = Column(String(160), nullable=False)
+    escalation_state = Column(String(40), nullable=False)
+    severity = Column(String(40), nullable=False)
+    note = Column(Text)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class CapacityActionEvent(Base):
+    __tablename__ = "capacity_action_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    action_id = Column(String(80), ForeignKey("capacity_action_state.action_id"), nullable=False, index=True)
+    event_type = Column(String(80), nullable=False)
+    previous_state_json = Column(JSON, nullable=False)
+    new_state_json = Column(JSON, nullable=False)
+    note = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
