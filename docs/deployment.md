@@ -56,3 +56,8 @@ Database passwords and connection strings belong in provider environment setting
 Alternatively deploy `render.yaml` to host the operations API with managed PostgreSQL, set `VITE_API_BASE_URL` to the API URL, and rebuild the frontend. Database hosting must be provisioned separately; the old static frontend deployment alone cannot provide shared persistence.
 
 Verify registration → hospital creation → flow save → CSV validation/import → analysis → task update → sign-out/sign-in. Repeat from a second account joined by an invitation to verify shared state and access isolation. Test `/health` (or `/api/health` on Vercel) and monitor server logs. Account access does not imply the application is approved to process patient-identifying data.
+
+
+## Current hosted release
+
+The complete app is deployed at https://edflow-orchestrator.vercel.app with the same-origin Python API and the attached PostgreSQL integration (`POSTGRES_URL`). On October 22, 2026, the hosted browser check verified account registration, hospital creation, flow saving, CSV validation/import, descriptive analysis, sign-out/sign-in, and persistence across the new session. The API health check returned HTTP 200. Local checks pass 15 backend tests and four CSV parser tests, with a successful production build. Desktop and mobile interaction checks passed. Verification records belong to a separate test account and are not shared with new users.

@@ -1,5 +1,7 @@
 # EDFlow Orchestrator
 
+[Open EDFlow](https://edflow-orchestrator.vercel.app)
+
 I built EDFlow to connect hospital process maps, operational time-series analysis, and team coordination in one workspace.
 
 Users can create hospital workspaces, define stages and connections, import aggregate observations, and track actions with owners, deadlines, notes, and history. The app calculates queue changes, interval throughput, rolling averages, and clearly labeled linear trend projections from the supplied data. It uses **no AI**.
